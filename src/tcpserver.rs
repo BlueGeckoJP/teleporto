@@ -4,8 +4,8 @@ use std::{
     process::exit,
 };
 
-fn tcpserver() {
-    let listener = TcpListener::bind("localhost:8000");
+pub fn tcpserver() {
+    let listener = TcpListener::bind("127.0.0.1:7878");
     if let Err(e) = listener {
         println!("Failed to bind. {}", e);
         exit(1);
@@ -14,28 +14,28 @@ fn tcpserver() {
 
     loop {
         println!("Waiting for connection...");
-        let stream = listener.accept();
-        if let Err(e) = stream {
-            println!("Failed to accept. {}", e);
-            exit(1);
-        }
-        let stream = stream.unwrap();
+        for stream in listener.incoming() {
+            if let Err(e) = stream {
+                println!("Failed to accept. {}", e);
+                exit(1);
+            }
+            let stream = stream.unwrap();
 
-        println!("Connected to {}", stream.1);
-        let mut stream = stream.0;
-        let mut reader = BufReader::new(&stream);
-        let mut writer = BufWriter::new(&stream);
+            println!("Connected to {}", stream.peer_addr().unwrap());
+            let mut reader = BufReader::new(&stream);
+            let mut writer = BufWriter::new(&stream);
 
-        let mut buf = String::new();
-        let size = reader.read_to_string(&mut buf);
-        if let Err(e) = size {
-            println!("Failed to read. {}", e);
-            exit(1);
+            let mut buf = String::new();
+            let size = reader.read_to_string(&mut buf);
+            if let Err(e) = size {
+                println!("Failed to read. {}", e);
+                exit(1);
+            }
+            let size = size.unwrap();
+            if size == 0 {
+                continue;
+            }
+            println!("{}", buf);
         }
-        let size = size.unwrap();
-        if size == 0 {
-            continue;
-        }
-        println!("{}", buf);
     }
 }
