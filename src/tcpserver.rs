@@ -1,7 +1,8 @@
 use std::{
-    io::{BufReader, BufWriter, Read},
-    net::TcpListener,
+    io::{Read, Write},
+    net::{TcpListener, TcpStream},
     process::exit,
+    thread,
 };
 
 pub fn tcpserver() {
@@ -21,21 +22,33 @@ pub fn tcpserver() {
             }
             let stream = stream.unwrap();
 
-            println!("Connected to {}", stream.peer_addr().unwrap());
-            let mut reader = BufReader::new(&stream);
-            let mut writer = BufWriter::new(&stream);
+            println!("Connection established.");
 
-            let mut buf = String::new();
-            let size = reader.read_to_string(&mut buf);
-            if let Err(e) = size {
-                println!("Failed to read. {}", e);
-                exit(1);
-            }
-            let size = size.unwrap();
-            if size == 0 {
-                continue;
-            }
-            println!("{}", buf);
+            thread::spawn(move || handle_client(&stream));
         }
     }
+}
+
+fn handle_client(mut s: &TcpStream) {
+    // Recv filename
+    let mut u8_filename = [0; 512];
+    s.read(&mut u8_filename).unwrap();
+
+    // Send OK
+    s.write_all("OK\n".as_bytes()).unwrap();
+    s.flush().unwrap();
+
+    // Recv file
+    let mut u8_file = [0; 512];
+    s.read(&mut u8_file).unwrap();
+
+    // Send OK
+    s.write_all("OK\n".as_bytes()).unwrap();
+    s.flush().unwrap();
+
+    println!(
+        "{} {}",
+        String::from_utf8(u8_filename.to_vec()).unwrap(),
+        String::from_utf8(u8_file.to_vec()).unwrap()
+    );
 }
