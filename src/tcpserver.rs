@@ -1,4 +1,5 @@
 use std::{
+    fs::File,
     io::{BufReader, BufWriter, Read, Write},
     iter,
     net::{TcpListener, TcpStream},
@@ -53,10 +54,11 @@ fn handle_client(s: &TcpStream) {
         file_array.push(u8_file);
     }
 
-    println!("{:?}", vec_u8_512_to_string(file_array));
+    println!("{:?}", vec_u8_512_to_string(&file_array));
+    vec_u8_512_to_file(&file_array);
 }
 
-fn vec_u8_512_to_string(arr: Vec<[u8; 512]>) -> String {
+fn vec_u8_512_to_string(arr: &Vec<[u8; 512]>) -> String {
     let mut out: Vec<u8> = vec![];
     for v in arr.iter() {
         for u8v in v.iter() {
@@ -66,4 +68,21 @@ fn vec_u8_512_to_string(arr: Vec<[u8; 512]>) -> String {
         }
     }
     String::from_utf8_lossy(&out).to_string()
+}
+
+fn vec_u8_512_to_file(arr: &Vec<[u8; 512]>) {
+    let mut out: Vec<u8> = vec![];
+    for v in arr.iter() {
+        for u8v in v.iter() {
+            if u8v.clone() != 0 {
+                out.push(u8v.clone());
+            }
+        }
+    }
+
+    let f = File::create_new("./out.png").unwrap();
+    let mut writer = BufWriter::new(f);
+
+    writer.write_all(out.as_slice()).unwrap();
+    writer.flush().unwrap();
 }
