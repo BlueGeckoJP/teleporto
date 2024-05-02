@@ -1,5 +1,6 @@
 use std::{
-    io::{Read, Write},
+    io::{BufReader, BufWriter, Read, Write},
+    iter,
     net::{TcpListener, TcpStream},
     process::exit,
     thread,
@@ -29,26 +30,40 @@ pub fn tcpserver() {
     }
 }
 
-fn handle_client(mut s: &TcpStream) {
+fn handle_client(s: &TcpStream) {
+    let mut reader = BufReader::new(s);
+    let mut writer = BufWriter::new(s);
+
     // Recv filename
     let mut u8_filename = [0; 512];
-    s.read(&mut u8_filename).unwrap();
+    reader.read(&mut u8_filename).unwrap();
 
     // Send OK
-    s.write_all("OK\n".as_bytes()).unwrap();
-    s.flush().unwrap();
+    writer.write_all("OK".as_bytes()).unwrap();
+    writer.flush().unwrap();
 
     // Recv file
-    let mut u8_file = [0; 512];
-    s.read(&mut u8_file).unwrap();
+    let mut file_array: Vec<[u8; 512]> = vec![];
+    loop {
+        let mut u8_file = [0; 512];
+        let r = reader.read(&mut u8_file);
+        if let Err(_) = r {
+            break;
+        }
+        file_array.push(u8_file);
+    }
 
-    // Send OK
-    s.write_all("OK\n".as_bytes()).unwrap();
-    s.flush().unwrap();
+    println!("{:?}", vec_u8_512_to_string(file_array));
+}
 
-    println!(
-        "{} {}",
-        String::from_utf8(u8_filename.to_vec()).unwrap(),
-        String::from_utf8(u8_file.to_vec()).unwrap()
-    );
+fn vec_u8_512_to_string(arr: Vec<[u8; 512]>) -> String {
+    let mut out: Vec<u8> = vec![];
+    for v in arr.iter() {
+        for u8v in v.iter() {
+            if u8v.clone() != 0 {
+                out.push(u8v.clone());
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).to_string()
 }

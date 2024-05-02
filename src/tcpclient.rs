@@ -5,7 +5,12 @@ use std::{
     time::Duration,
 };
 
-pub fn tcpclient() {
+pub struct FileData {
+    pub filename: String,
+    pub file: Vec<u8>,
+}
+
+pub fn tcpclient(data: FileData) {
     loop {
         let server_addr = "127.0.0.1:7878";
         let socket = TcpStream::connect(server_addr);
@@ -17,7 +22,7 @@ pub fn tcpclient() {
         println!("Connected to server.");
 
         // Send filename
-        socket.write_all("A".as_bytes()).unwrap();
+        socket.write_all(data.filename.as_bytes()).unwrap();
         socket.flush().unwrap();
 
         // Recv OK
@@ -25,11 +30,8 @@ pub fn tcpclient() {
         socket.read(&mut ok).unwrap();
 
         // Send file
-        socket.write_all("B".as_bytes()).unwrap();
+        socket.write_all(data.file.as_slice()).unwrap();
         socket.flush().unwrap();
-
-        // Recv OK
-        socket.read(&mut ok).unwrap();
 
         break;
     }
