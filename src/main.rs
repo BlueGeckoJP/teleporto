@@ -8,14 +8,11 @@ mod window;
 #[macro_use]
 extern crate log;
 
-use webserver::webserver;
-use window::Window;
+use crate::window::Window;
 
 #[tokio::main]
 async fn main() -> Result<(), eframe::Error> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
-    tokio::spawn(async move { webserver().await });
 
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
