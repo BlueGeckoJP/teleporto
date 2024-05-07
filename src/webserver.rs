@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::{BufWriter, Write},
+    sync::Mutex,
 };
 
 use axum::{
@@ -10,10 +11,24 @@ use axum::{
     Router,
 };
 use log::info;
-use tokio::net::TcpListener;
+use once_cell::sync::OnceCell;
+use tokio::{
+    net::TcpListener,
+    sync::broadcast::{Receiver, Sender},
+};
 use tower_http::trace::TraceLayer;
 
-pub async fn webserver() {
+static CHANNEL: OnceCell<Mutex<Channel>> = OnceCell::new();
+
+#[derive(Debug)]
+pub struct Channel {
+    pub tx: Sender<String>,
+    pub rx: Receiver<String>,
+}
+
+pub async fn webserver(channel: Channel) {
+    CHANNEL.set(Mutex::new(channel)).unwrap();
+
     let ip = "127.0.0.1:8080";
 
     let app = Router::new()
@@ -28,6 +43,12 @@ pub async fn webserver() {
 }
 
 async fn accept_form(mut multipart: Multipart) {
+    let channel = CHANNEL.get().unwrap();
+    let tx = channel.lock().unwrap().tx.clone();
+    let rx = channel.lock().unwrap().tx.subscribe();
+
+    tx.send("a".to_string()).unwrap();
+
     while let Some(field) = multipart.next_field().await.unwrap() {
         //let name = field.name().unwrap().to_string();
         let file_name = field.file_name().unwrap().to_string();
