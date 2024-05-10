@@ -1,7 +1,10 @@
 use std::{
     fs::File,
     io::{BufWriter, Write},
+    net::SocketAddr,
     sync::Mutex,
+    thread,
+    time::Duration,
 };
 
 use axum::{
@@ -10,6 +13,7 @@ use axum::{
     routing::post,
     Router,
 };
+use axum_client_ip::{InsecureClientIp, SecureClientIp, SecureClientIpSource};
 use log::info;
 use once_cell::sync::OnceCell;
 use tokio::{
@@ -27,27 +31,45 @@ pub struct Channel {
 }
 
 pub async fn webserver(channel: Channel) {
+    info!("aaa");
     CHANNEL.set(Mutex::new(channel)).unwrap();
 
-    let ip = "127.0.0.1:8080";
+    let ip = "127.0.0.1:40000";
 
     let app = Router::new()
         .route("/", post(accept_form))
         .layer(DefaultBodyLimit::disable())
-        .layer(TraceLayer::new_for_http());
+        .layer(TraceLayer::new_for_http())
+        .layer(SecureClientIpSource::ConnectInfo.into_extension());
 
     let listener = TcpListener::bind(ip).await.unwrap();
 
     info!("Web server started at {}", ip);
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
 
-async fn accept_form(mut multipart: Multipart) {
+async fn accept_form(_: InsecureClientIp, secure_ip: SecureClientIp, mut multipart: Multipart) {
     let channel = CHANNEL.get().unwrap();
     let tx = channel.lock().unwrap().tx.clone();
-    let rx = channel.lock().unwrap().tx.subscribe();
+    let mut rx = channel.lock().unwrap().tx.subscribe();
 
-    tx.send("a".to_string()).unwrap();
+    /*tx.send(secure_ip.0.to_string()).unwrap();
+
+    loop {
+        let recv = rx.try_recv();
+        info!("accept_form");
+        if let Ok(result) = recv {
+            if result == String::from("NU") {
+                break;
+            }
+        }
+        thread::sleep(Duration::from_secs(1));
+    }*/
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         //let name = field.name().unwrap().to_string();
