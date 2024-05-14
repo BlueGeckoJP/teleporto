@@ -38,27 +38,26 @@ async fn main() {
                 .build(),
         )
         .setup(|app| {
-            let channel = BACK_TO_FRONT_CHANNEL.get().unwrap();
-            let mut rx = channel.lock().unwrap().tx.subscribe();
+            let b_channel = BACK_TO_FRONT_CHANNEL.get().unwrap();
+            let mut b_rx = b_channel.lock().unwrap().tx.subscribe();
+            let f_channel = FRONT_TO_BACK_CHANNEL.get().unwrap();
+            let f_tx = f_channel.lock().unwrap().tx.clone();
 
             let app_handle = app.app_handle();
 
-            loop {
-                let recv = rx.try_recv();
-                if let Ok(s) = recv {
-                    app_handle.emit_all("back-to-front", s).unwrap();
-                    break;
+            tokio::spawn(async move {
+                loop {
+                    let recv = b_rx.try_recv();
+                    if let Ok(s) = recv {
+                        app_handle.emit_all("back-to-front", s).unwrap();
+                        info!("app_handle.emit_all back-to-front");
+                        break;
+                    }
                 }
-            }
-
-            Ok(())
-        })
-        .setup(|app| {
-            let channel = FRONT_TO_BACK_CHANNEL.get().unwrap();
-            let tx = channel.lock().unwrap().tx.clone();
+            });
 
             let _ = app.listen_global("front-to-back", move |event| {
-                tx.send(event.payload().unwrap().to_string()).unwrap();
+                f_tx.send(event.payload().unwrap().to_string()).unwrap();
             });
             Ok(())
         })

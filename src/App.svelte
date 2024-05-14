@@ -12,7 +12,6 @@
   export let fromAddressMessage = "-.-.-.-";
 
   appWindow.setSize(new LogicalSize(500, 400));
-
   window.__TAURI__.invoke("init_web_server");
 
   async function openFileDialog() {
@@ -28,7 +27,19 @@
 
   async function acceptButton() {
     window.__TAURI__.event.emit("front-to-back", "FRONT-TO-BACK");
+    receiveMessage = "Waiting to receive file...";
+    fromAddressMessage = "-.-.-.-";
   }
+
+  async function listener() {
+    await window.__TAURI__.event.listen("back-to-front", (event) => {
+      console.log("back-to-front");
+      receiveMessage = "Received file available";
+      fromAddressMessage = event.payload as string;
+    });
+  }
+
+  listener();
 </script>
 
 <main>
