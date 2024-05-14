@@ -51,7 +51,6 @@ async fn main() {
                     if let Ok(s) = recv {
                         app_handle.emit_all("back-to-front", s).unwrap();
                         info!("app_handle.emit_all back-to-front");
-                        break;
                     }
                 }
             });
