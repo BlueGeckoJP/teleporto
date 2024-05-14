@@ -27,7 +27,7 @@
   }
 
   async function acceptButton() {
-    window.__TAURI__.event.emit("front-to-back", "NU");
+    window.__TAURI__.event.emit("front-to-back", "FRONT-TO-BACK");
   }
 </script>
 

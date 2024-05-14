@@ -3,8 +3,6 @@ use std::{
     io::{BufWriter, Write},
     net::SocketAddr,
     sync::Mutex,
-    thread,
-    time::Duration,
 };
 
 use axum::{
@@ -22,7 +20,8 @@ use tokio::{
 };
 use tower_http::trace::TraceLayer;
 
-static CHANNEL: OnceCell<Mutex<Channel>> = OnceCell::new();
+static BACK_TO_FRONT_CHANNEL: OnceCell<Mutex<Channel>> = OnceCell::new();
+static FRONT_TO_BACK_CHANNEL: OnceCell<Mutex<Channel>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct Channel {
@@ -30,9 +29,9 @@ pub struct Channel {
     pub rx: Receiver<String>,
 }
 
-pub async fn webserver(channel: Channel) {
-    info!("aaa");
-    CHANNEL.set(Mutex::new(channel)).unwrap();
+pub async fn webserver(b_channel: Channel, f_channel: Channel) {
+    BACK_TO_FRONT_CHANNEL.set(Mutex::new(b_channel)).unwrap();
+    FRONT_TO_BACK_CHANNEL.set(Mutex::new(f_channel)).unwrap();
 
     let ip = "127.0.0.1:40000";
 
@@ -54,22 +53,18 @@ pub async fn webserver(channel: Channel) {
 }
 
 async fn accept_form(_: InsecureClientIp, secure_ip: SecureClientIp, mut multipart: Multipart) {
-    let channel = CHANNEL.get().unwrap();
-    let tx = channel.lock().unwrap().tx.clone();
-    let mut rx = channel.lock().unwrap().tx.subscribe();
+    let b_channel = BACK_TO_FRONT_CHANNEL.get().unwrap();
+    let b_tx = b_channel.lock().unwrap().tx.clone();
+    let f_channel = FRONT_TO_BACK_CHANNEL.get().unwrap();
+    let mut f_rx = f_channel.lock().unwrap().tx.subscribe();
 
-    /*tx.send(secure_ip.0.to_string()).unwrap();
-
+    b_tx.send(secure_ip.0.to_string()).unwrap();
     loop {
-        let recv = rx.try_recv();
-        info!("accept_form");
-        if let Ok(result) = recv {
-            if result == String::from("NU") {
-                break;
-            }
+        let recv = f_rx.try_recv();
+        if let Ok(_) = recv {
+            break;
         }
-        thread::sleep(Duration::from_secs(1));
-    }*/
+    }
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         //let name = field.name().unwrap().to_string();
