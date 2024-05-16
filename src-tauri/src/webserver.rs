@@ -29,11 +29,9 @@ pub struct Channel {
     pub rx: Receiver<String>,
 }
 
-pub async fn webserver(b_channel: Channel, f_channel: Channel) {
+pub async fn webserver(ip: String, b_channel: Channel, f_channel: Channel) {
     BACK_TO_FRONT_CHANNEL.set(Mutex::new(b_channel)).unwrap();
     FRONT_TO_BACK_CHANNEL.set(Mutex::new(f_channel)).unwrap();
-
-    let ip = "127.0.0.1:40000";
 
     let app = Router::new()
         .route("/", post(accept_form))
@@ -41,7 +39,7 @@ pub async fn webserver(b_channel: Channel, f_channel: Channel) {
         .layer(TraceLayer::new_for_http())
         .layer(SecureClientIpSource::ConnectInfo.into_extension());
 
-    let listener = TcpListener::bind(ip).await.unwrap();
+    let listener = TcpListener::bind(ip.clone()).await.unwrap();
 
     info!("Web server started at {}", ip);
     axum::serve(

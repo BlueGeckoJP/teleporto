@@ -9,6 +9,8 @@ extern crate log;
 use std::sync::Mutex;
 
 use once_cell::sync::OnceCell;
+use rand::Rng;
+use reqwest::blocking::{multipart, Client};
 use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 use tokio::sync::broadcast;
@@ -60,7 +62,7 @@ async fn main() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![init_web_server])
+        .invoke_handler(tauri::generate_handler![init_web_server, send_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -76,11 +78,28 @@ async fn init_web_server() {
     let f_tx = f_channel.lock().unwrap().tx.clone();
     let f_rx = f_channel.lock().unwrap().tx.subscribe();
 
+    let mut rng = rand::thread_rng();
+    let port = rng.gen_range(40000..40010);
+    let ip = format!("127.0.0.1:{}", port);
+
     tokio::spawn(async move {
         webserver(
+            ip,
             Channel { tx: b_tx, rx: b_rx },
             Channel { tx: f_tx, rx: f_rx },
         )
         .await
+    });
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn send_file(path: String, dst_ip: String) {
+    info!("Sending file..");
+    tokio::task::spawn_blocking(move || {
+        let client = Client::new();
+        let form = multipart::Form::new().file("file", path.clone()).unwrap();
+        let res = client.post(dst_ip.clone()).multipart(form).send().unwrap();
+        info!("Status: {}", res.status());
+        info!("{path} send to {dst_ip}");
     });
 }

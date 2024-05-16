@@ -4,6 +4,7 @@
   import Input from "./lib/Input.svelte";
   import Button from "./lib/Button.svelte";
   import { open, type OpenDialogOptions } from "@tauri-apps/api/dialog";
+  import { invoke } from "@tauri-apps/api/tauri";
 
   export let filePath = "";
   export let ipAddress = "";
@@ -12,7 +13,7 @@
   export let fromAddressMessage = "-.-.-.-";
 
   appWindow.setSize(new LogicalSize(500, 400));
-  window.__TAURI__.invoke("init_web_server");
+  invoke("init_web_server");
 
   async function openFileDialog() {
     let options: OpenDialogOptions = {
@@ -23,6 +24,10 @@
     if (!Array.isArray(result) && result !== null) {
       filePath = result;
     }
+  }
+
+  async function sendButton() {
+    await invoke("send_file", { path: filePath, dst_ip: ipAddress });
   }
 
   async function acceptButton() {
@@ -59,7 +64,7 @@
           <td><Input bind:value={ipAddress} /></td>
         </tr>
       </table>
-      <Button text="Send" func={() => {}} />
+      <Button text="Send" func={sendButton} />
     </div>
     <div id="receive-container">
       <p>{receiveMessage}</p>
