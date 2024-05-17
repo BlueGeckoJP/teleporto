@@ -1,8 +1,5 @@
 <script lang="ts">
   import { LogicalSize, appWindow } from "@tauri-apps/api/window";
-  import FileInput from "./lib/FileInput.svelte";
-  import Input from "./lib/Input.svelte";
-  import Button from "./lib/Button.svelte";
   import { open, type OpenDialogOptions } from "@tauri-apps/api/dialog";
   import { invoke } from "@tauri-apps/api/tauri";
 
@@ -48,64 +45,157 @@
 </script>
 
 <main>
-  <div>
+  <div id="top">
     <div id="send-container">
-      <table id="send-table">
-        <tr>
-          <td>File Path:</td>
-          <td>
-            <div>
-              <FileInput bind:value={filePath} func={openFileDialog} />
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>IP Address:</td>
-          <td><Input bind:value={ipAddress} /></td>
-        </tr>
-      </table>
-      <Button text="Send" func={sendButton} />
+      <div class="heading-text">
+        <p>Send</p>
+        <div></div>
+      </div>
+      <div id="send-config-container">
+        <p>File Path:</p>
+        <div id="filepath-input">
+          <input class="input-theme" bind:value={filePath} />
+          <button class="button-theme" on:click={openFileDialog}>..</button>
+        </div>
+        <p>IP Address:</p>
+        <input
+          id="ipaddress-input"
+          class="input-theme"
+          bind:value={ipAddress}
+        />
+      </div>
+      <div class="flex-grow-button">
+        <button class="button-theme" on:click={sendButton}>Send</button>
+      </div>
     </div>
-    <div id="receive-container">
-      <p>{receiveMessage}</p>
-      <p>From: {fromAddressMessage}</p>
-      <Button text="Accept" func={acceptButton} />
+    <div id="recv-container">
+      <div class="heading-text">
+        <p>Receive</p>
+        <div></div>
+      </div>
+      <p class="recv-msg">{receiveMessage}</p>
+      <p class="recv-msg">From: {fromAddressMessage}</p>
+      <div class="flex-grow-button">
+        <button class="button-theme" on:click={acceptButton}>Accept</button>
+      </div>
     </div>
   </div>
 </main>
 
 <style>
+  :root {
+    --first-color: #f9f7f7;
+    --second-color: #dbe2ef;
+    --third-color: #3f72af;
+    --primary-text-color: #212121;
+  }
+
   :global(body) {
     margin: 0;
   }
 
-  /** {
-    border: 1px dotted red;
-  }*/
-
-  main > div {
-    box-sizing: border-box;
-    width: 90%;
+  main {
+    width: 100%;
     height: 100vh;
-    margin: 0 auto;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
+    background-color: var(--first-color);
+  }
+
+  p {
+    margin: 0;
+    color: var(--primary-text-color);
+  }
+
+  #top {
+    width: 100%;
+    height: 100vh;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   #send-container {
-    box-sizing: border-box;
     width: 100%;
-    height: 50vh;
-    border-bottom: 1px solid black;
+    height: calc(50vh - 20px);
+    padding-top: 20px;
   }
 
-  #send-table {
+  #recv-container {
+    width: 100%;
+    height: calc(50vh - 20px);
+    padding-bottom: 20px;
+  }
+
+  #filepath-input {
+    display: flex;
+    width: calc(100% - 40px);
+  }
+
+  #filepath-input > input {
     width: 100%;
   }
 
-  #receive-container {
-    width: 100%;
-    height: calc(50vh - 16px);
+  #filepath-input > button {
+    width: 30px;
+  }
+
+  #ipaddress-input {
+    width: calc(100% - 40px);
+  }
+
+  .flex-grow-button {
+    margin-top: 8px;
+    display: flex;
+    width: calc(100% - 40px);
+  }
+
+  .flex-grow-button > button {
+    flex-grow: 1;
+  }
+
+  .recv-msg {
+    width: calc(100% - 40px);
+    display: block;
     text-align: center;
+  }
+
+  .input-theme {
+    border: 2px solid var(--second-color);
+    border-radius: 5px;
+    background-color: var(--first-color);
+    transition: all 0.3s;
+    color: var(--primary-text-color);
+  }
+
+  .input-theme:focus {
+    border: 2px solid var(--third-color);
+    outline: 0;
+  }
+
+  .button-theme {
+    border: 0;
+    border-radius: 5px;
+    background-color: var(--second-color);
+    transition: all 0.5s;
+    color: var(--primary-text-color);
+  }
+
+  .button-theme:active {
+    background-color: var(--third-color);
+  }
+
+  .heading-text {
+    width: calc(100% - 40px);
+    display: flex;
+    align-items: center;
+  }
+
+  .heading-text > p {
+    font-weight: bold;
+  }
+
+  .heading-text > div {
+    border: 1px solid var(--primary-text-color);
+    width: 100%;
+    height: 0;
+    margin-left: 4px;
   }
 </style>

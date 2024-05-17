@@ -79,7 +79,7 @@ async fn init_web_server() {
     let f_rx = f_channel.lock().unwrap().tx.subscribe();
 
     let mut rng = rand::thread_rng();
-    let port = rng.gen_range(40000..40010);
+    let port = rng.gen_range(40000..40100);
     let ip = format!("127.0.0.1:{}", port);
 
     tokio::spawn(async move {
